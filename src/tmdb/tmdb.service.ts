@@ -5,10 +5,13 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class TmdbService {
-  private readonly api_key: string = process.env.API_KEY!;
-  private readonly baseUrl: string = process.env.BASE_URL!;
+  private readonly api_key: string;
+  private readonly baseUrl: string;
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(private readonly httpService: HttpService, private readonly configService: ConfigService) {
+    this.api_key = this.configService.get<string>('API_KEY')!;
+    this.baseUrl = this.configService.get<string>('BASE_URL')!;
+  }
 
   async getTopRatedMovies(): Promise<any[]> {
     const allMovies: any[] = [];
@@ -18,10 +21,9 @@ export class TmdbService {
       const url = `${this.baseUrl}?api_key=${this.api_key}&language=pt-BR&page=${i}`;
       const response = await firstValueFrom(this.httpService.get(url));
 
-      console.log(response.data)
       allMovies.push(...response.data.results);
     }
-    return allMovies.slice(0, 250); 
+    return allMovies.slice(0, 250);
   }
 
   async getAverageByGenre(): Promise<string> {
@@ -32,8 +34,21 @@ export class TmdbService {
     return 'Retorna a quantidade de filme por genero';
   }
 
-  async getCountByYear(): Promise<string> {
-    return 'Retorna a quantidade de filme por ano';
+  async getCountByYear(): Promise<Record<string, number>> {
+    const movies = await this.getTopRatedMovies();
+    const count: Record<string, number> = {};
+
+    movies.forEach((movie, index) => {
+      const year = movie.release_date.slice(0,4);
+      
+      if(!count[year]) {
+        count[year] = 1;
+      } else {
+        count[year]++;
+      }
+    })
+
+    return count;
   }
 
   async getTrendingComparison(): Promise<string> {
