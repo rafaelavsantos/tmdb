@@ -7,10 +7,12 @@ import { firstValueFrom } from 'rxjs';
 export class TmdbService {
   private readonly api_key: string;
   private readonly baseUrl: string;
+  private readonly urlGenre: string;
 
   constructor(private readonly httpService: HttpService, private readonly configService: ConfigService) {
     this.api_key = this.configService.get<string>('API_KEY')!;
     this.baseUrl = this.configService.get<string>('BASE_URL')!;
+    this.urlGenre = this.configService.get<string>('URL_GENRE')!;
   }
 
   async getTopRatedMovies(): Promise<any[]> {
@@ -26,22 +28,47 @@ export class TmdbService {
     return allMovies.slice(0, 250);
   }
 
+  async getGenre(): Promise<any[]> {
+    const url = `${this.urlGenre}?api_key=${this.api_key}&language=pt-BR`;
+    const response = await firstValueFrom(this.httpService.get(url));
+
+    return response.data.genres;
+  }
+
   async getAverageByGenre(): Promise<string> {
     return 'Retorna a media';
   }
 
-  async getCountByGenre(): Promise<string> {
-    return 'Retorna a quantidade de filme por genero';
+  async getCountByGenre(): Promise<Record<string, number>>{
+    const allMovies = await this.getTopRatedMovies();
+    const genres = await this.getGenre();
+
+    const count: Record<string, number> = {};
+
+    genres.forEach((g) => {
+      const idGenre = g.id;
+      const nameGenre = g.name;
+      
+      allMovies.forEach((movie) => {
+        const genreMovieId = movie.genre_ids;
+
+        if(genreMovieId.includes(idGenre)) {
+          count[nameGenre] = (count[nameGenre] || 0) + 1;
+        }
+      });
+    });
+
+    return count;
   }
 
   async getCountByYear(): Promise<Record<string, number>> {
     const movies = await this.getTopRatedMovies();
     const count: Record<string, number> = {};
 
-    movies.forEach((movie, index) => {
-      const year = movie.release_date.slice(0,4);
-      
-      if(!count[year]) {
+    movies.forEach((movie) => {
+      const year = movie.release_date.slice(0, 4);
+
+      if (!count[year]) {
         count[year] = 1;
       } else {
         count[year]++;

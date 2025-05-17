@@ -50,5 +50,8 @@ npm install
 npm run start:dev
 ```
 
+## Prints de conversas com IA
+-- Adicionar as imagens aqui
+
 ### 📜 Licença
 Este projeto está sob a licença MIT.
