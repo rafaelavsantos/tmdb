@@ -35,8 +35,34 @@ export class TmdbService {
     return response.data.genres;
   }
 
-  async getAverageByGenre(): Promise<string> {
-    return 'Retorna a media';
+  async getAverageByGenre(): Promise<Record<string, number>> {
+    const allMovies = await this.getTopRatedMovies();
+    const genres = await this.getGenre();
+
+    const count: Record<string, number> = {};
+    const sum: Record<string, number> = {};
+    const average: Record<string, number> = {};
+    
+    genres.forEach((g) => {
+      const idGenre = g.id;
+      const nameGenre = g.name;
+      
+      allMovies.forEach((movie) => {
+        const genreMovieId = movie.genre_ids;
+        console.log(movie);
+
+        if(genreMovieId.includes(idGenre)) {
+          count[nameGenre] = (count[nameGenre] || 0) + 1;
+          sum[nameGenre] = (sum[nameGenre] || 0) + movie.vote_average;
+        }
+      });
+    });
+
+    Object.keys(sum).forEach((name) => {
+      average[name] = parseFloat((sum[name] / count[name]).toFixed(2));
+    })
+
+    return average;
   }
 
   async getCountByGenre(): Promise<Record<string, number>>{
